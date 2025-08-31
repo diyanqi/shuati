@@ -16,14 +16,14 @@ export default function DashboardPage() {
     <SidebarProvider
       style={
         {
-          "--sidebar-width": "350px",
+          "--sidebar-width": "200px",
           "--sidebar-width-icon": "50px",
         } as React.CSSProperties
       }
     >
       <AppSidebar onSelectedItemChange={handleSelectedItemChange} />
       <SidebarInset>
-        <main className="h-full">
+        <main className="h-full flex-1 ml-[var(--sidebar-width)]">
           <ItemDetail item={selectedItem} />
         </main>
       </SidebarInset>

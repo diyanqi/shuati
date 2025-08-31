@@ -1,4 +1,4 @@
-import { getSupabaseClient, createResponse, createErrorResponse, handleCORS } from '../../lib/database.js';
+import { getSupabaseClient, createResponse, createErrorResponse, handleCORS } from '../../../lib/database.js';
 
 export async function onRequest({ request, params, env }) {
   const corsResponse = await handleCORS(request);

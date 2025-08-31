@@ -21,23 +21,24 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Switch } from "@/components/ui/switch"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // 导航主菜单配置
 const navMain = [
   {
-    title: "组织",
+    title: "考试联盟",
     key: "organizations",
     icon: Building2,
     isActive: true,
   },
   {
-    title: "考试",
+    title: "历场考试",
     key: "exams",
     icon: GraduationCap,
     isActive: false,
   },
   {
-    title: "题目",
+    title: "原味题目",
     key: "questions",
     icon: FileQuestion,
     isActive: false,
@@ -271,14 +272,13 @@ export function AppSidebar({ onSelectedItemChange, ...props }: AppSidebarProps) 
 
   return (
     <Sidebar
-      collapsible="icon"
-      className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
+      className="overflow-hidden *:data-[sidebar=sidebar]:flex-row w-100"
       {...props}
     >
       {/* 第一栏：主导航菜单 */}
       <Sidebar
         collapsible="none"
-        className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
+        className="w-32 border-r"
       >
         <SidebarHeader>
           <SidebarMenu>
@@ -289,8 +289,7 @@ export function AppSidebar({ onSelectedItemChange, ...props }: AppSidebarProps) 
                     <BookOpen className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">题库系统</span>
-                    <span className="truncate text-xs">管理平台</span>
+                    <span className="truncate font-medium">墨灵·刷题</span>
                   </div>
                 </a>
               </SidebarMenuButton>
@@ -299,18 +298,18 @@ export function AppSidebar({ onSelectedItemChange, ...props }: AppSidebarProps) 
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupContent className="px-1.5 md:px-0">
+            <SidebarGroupContent>
               <SidebarMenu>
                 {navMain.map((item) => (
                   <SidebarMenuItem key={item.key}>
                     <SidebarMenuButton
                       tooltip={{
                         children: item.title,
-                        hidden: false,
+                        hidden: true,
                       }}
                       onClick={() => handleMenuItemClick(item)}
                       isActive={activeItem?.key === item.key}
-                      className="px-2.5 md:px-2"
+                      className="justify-start gap-3 px-3"
                     >
                       <item.icon />
                       <span>{item.title}</span>
@@ -347,11 +346,19 @@ export function AppSidebar({ onSelectedItemChange, ...props }: AppSidebarProps) 
           />
         </SidebarHeader>
         <SidebarContent>
-          <SidebarGroup className="px-0">
+          <SidebarGroup className="px-0 mt-[-8]">
             <SidebarGroupContent>
               {loading ? (
-                <div className="flex items-center justify-center p-8">
-                  <div className="text-sm text-muted-foreground">加载中...</div>
+                <div className="p-2">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="border-b last:border-b-0 p-4">
+                      <div className="flex w-full items-center gap-2 mb-2">
+                        <Skeleton className="h-4 w-1/2 flex-1" />
+                        <Skeleton className="h-3 w-24 ml-auto" />
+                      </div>
+                      <Skeleton className="h-3 w-5/6" />
+                    </div>
+                  ))}
                 </div>
               ) : getCurrentListData().length === 0 ? (
                 <div className="flex items-center justify-center p-8">

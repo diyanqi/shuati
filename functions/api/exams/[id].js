@@ -1,5 +1,5 @@
-import { getSupabaseClient, createResponse, createErrorResponse, handleCORS } from '../lib/database.js';
-import { validateExam } from '../lib/validators.js';
+import { getSupabaseClient, createResponse, createErrorResponse, handleCORS } from '../../lib/database.js';
+import { validateExam } from '../../lib/validators.js';
 
 export async function onRequest({ request, params, env }) {
   const corsResponse = await handleCORS(request);

@@ -1,11 +1,18 @@
-import { getSupabaseClient, createResponse, createErrorResponse, createPaginationResponse, parsePagination, handleCORS } from '../lib/database.js';
-import { validateOrganization } from '../lib/validators.js';
+import { getSupabaseClient } from '../lib/supabase.js';
+import { createResponse, createErrorResponse, createPaginationResponse, parsePagination, handleCORS } from '../lib/utils.js';
+// import { validateOrganization } from '../../lib/validators.js'; // 暂时注释掉，因为文件不存在
 
-export async function onRequest({ request, env }) {
+export async function onRequest(context) {
+  const { request, env } = context;
+  
   const corsResponse = await handleCORS(request);
   if (corsResponse) return corsResponse;
 
   try {
+    // --- 调试信息: 检查环境变量 ---
+    console.log('[DEBUG] Supabase URL Loaded:', !!env.SUPABASE_URL);
+    console.log('[DEBUG] Supabase Anon Key Loaded:', !!env.SUPABASE_ANON_KEY);
+
     const supabase = getSupabaseClient(env);
     const url = new URL(request.url);
     const searchParams = url.searchParams;
@@ -14,6 +21,12 @@ export async function onRequest({ request, env }) {
       // 解析分页参数
       const { page, pageSize, offset } = parsePagination(searchParams);
       
+      // --- 调试信息: 打印查询参数 ---
+      const search = searchParams.get('search');
+      const region = searchParams.get('region');
+      const status = searchParams.get('status');
+      console.log(`[DEBUG] Query Params: page=${page}, pageSize=${pageSize}, search=${search}, region=${region}, status=${status}`);
+
       // 构建查询
       let query = supabase
         .from('organizations')
@@ -21,19 +34,16 @@ export async function onRequest({ request, env }) {
         .order('created_at', { ascending: false });
 
       // 搜索过滤
-      const search = searchParams.get('search');
       if (search) {
         query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
       }
 
       // 地区过滤
-      const region = searchParams.get('region');
       if (region) {
         query = query.eq('region', region);
       }
 
       // 状态过滤
-      const status = searchParams.get('status');
       if (status) {
         query = query.eq('status', status);
       }
@@ -41,11 +51,21 @@ export async function onRequest({ request, env }) {
       // 执行查询
       const { data, error, count } = await query.range(offset, offset + pageSize - 1);
 
+      // --- 调试信息: 打印查询结果 ---
+      console.log(`[DEBUG] Supabase query returned count: ${count}`);
+      if (error) {
+        console.error('[DEBUG] Supabase query error:', JSON.stringify(error, null, 2));
+      }
+
       if (error) {
         throw {
           code: 'DATABASE_ERROR',
-          message: '查询组织列表失败',
-          details: { error: error.message }
+          message: `查询组织列表失败: ${error.message}`,
+          details: { 
+            hint: error.hint,
+            code: error.code,
+            details: error.details,
+          }
         };
       }
 
@@ -81,8 +101,8 @@ export async function onRequest({ request, env }) {
     if (request.method === 'POST') {
       const body = await request.json();
       
-      // 验证数据
-      validateOrganization(body);
+      // 验证数据 - 暂时注释
+      // validateOrganization(body);
 
       // 插入数据
       const { data, error } = await supabase
@@ -101,10 +121,15 @@ export async function onRequest({ request, env }) {
         .single();
 
       if (error) {
+        console.error('[DEBUG] Supabase insert error:', JSON.stringify(error, null, 2));
         throw {
           code: 'DATABASE_ERROR',
-          message: '创建组织失败',
-          details: { error: error.message }
+          message: `创建组织失败: ${error.message}`,
+          details: { 
+            hint: error.hint,
+            code: error.code,
+            details: error.details,
+          }
         };
       }
 

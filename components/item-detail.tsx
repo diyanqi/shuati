@@ -213,5 +213,5 @@ export function ItemDetail({ item }: ItemDetailProps) {
     }
   }
 
-  return <div className="p-8 h-full overflow-y-auto">{renderDetail()}</div>
+  return <div className="p-8 h-full flex-1 overflow-y-auto">{renderDetail()}</div>
 }
