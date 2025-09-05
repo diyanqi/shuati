@@ -1,63 +1,24 @@
-// API响应的基础类型
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  timestamp: string;
+// API Types based on the API documentation
+
+export interface ContactInfo {
+  email?: string;
+  phone?: string;
+  address?: string;
+  website?: string;
 }
 
-export interface ApiError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details: any;
-  };
-  timestamp: string;
-}
-
-// 分页信息
-export interface Pagination {
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrev: boolean;
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  pagination: Pagination;
-}
-
-// 组织相关类型
 export interface Organization {
   id: string;
   organizationCode: string;
   name: string;
   description?: string;
-  contactInfo?: {
-    email?: string;
-    phone?: string;
-    address?: string;
-    website?: string;
-  };
+  contactInfo?: ContactInfo;
   region?: string;
   establishmentDate?: string;
   logoUrl?: string;
   status: 'active' | 'inactive' | 'suspended';
   createdAt: string;
   updatedAt: string;
-}
-
-// 考试相关类型
-export interface ExamSubject {
-  subject: string;
-  pdfUrl?: string;
-  duration: number;
-  totalScore: number;
-  questionCount: number;
 }
 
 export interface Exam {
@@ -75,39 +36,24 @@ export interface Exam {
   endTime: string;
   subjects: ExamSubject[];
   difficultyLevel: string;
-  status: 'draft' | 'published' | 'archived';
+  status: string;
   totalQuestions: number;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface ExamOverview {
-  id: string;
-  examCode: string;
-  examName: string;
-  organizationName: string;
-  startDate: string;
-  endDate: string;
-  gradeLevel: string;
-  examType: string;
-  totalQuestions: number;
-  subjectStatistics: Record<string, number>;
-  difficultyDistribution: Record<string, number>;
-  typeDistribution: Record<string, number>;
-}
-
-// 题目相关类型
-export interface QuestionOption {
-  label: string;
-  content: string;
-  isCorrect: boolean;
-  knowledgePoints?: string[];
+export interface ExamSubject {
+  subject: string;
+  pdfUrl?: string;
+  duration: number;
+  totalScore: number;
+  questionCount: number;
 }
 
 export interface Question {
   id: string;
   organizationId: string;
-  examId: string;
+  examId?: string;
   questionCode: string;
   subject: string;
   questionType: string;
@@ -131,7 +77,7 @@ export interface Question {
   scoringCriteria?: string;
   questionOrder: number;
   pageNumber: number;
-  sectionName?: string;
+  sectionName: string;
   averageScore?: number;
   correctRate?: number;
   discrimination?: number;
@@ -139,72 +85,103 @@ export interface Question {
   source?: string;
   copyrightInfo?: string;
   similarQuestions: string[];
-  status: 'draft' | 'published' | 'archived';
+  status: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// 搜索相关类型
-export interface SearchInfo {
-  query: string;
-  totalResults: number;
-  searchTime: number;
-  suggestions: string[];
+export interface QuestionOption {
+  label: string;
+  content: string;
+  isCorrect: boolean;
+  knowledgePoints: string[];
+}
+
+export interface PaginationInfo {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  timestamp: string;
+}
+
+export interface PaginatedApiResponse<T> {
+  success: boolean;
+  data: {
+    items: T[];
+    pagination: PaginationInfo;
+  };
+  message?: string;
+  timestamp: string;
+}
+
+// Additional API types
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: any;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: PaginationInfo;
+}
+
+export interface ExamOverview {
+  totalExams: number;
+  activeExams: number;
+  completedExams: number;
+  averageScore: number;
 }
 
 export interface QuestionSearchResponse {
   items: Question[];
-  searchInfo: SearchInfo;
-  pagination: Pagination;
+  totalCount: number;
+  searchTime: number;
 }
 
-// 统计相关类型
 export interface SystemOverview {
   totalOrganizations: number;
   totalExams: number;
   totalQuestions: number;
-  activeExams: number;
-  subjectDistribution: Record<string, number>;
-  recentActivity: {
-    type: string;
-    title: string;
-    description: string;
-    timestamp: string;
-  }[];
+  totalUsers: number;
 }
 
-// 查询参数类型
+// Query parameter types
 export interface OrganizationQueryParams {
   page?: number;
   pageSize?: number;
   search?: string;
+  status?: string;
   region?: string;
-  status?: 'active' | 'inactive' | 'suspended';
 }
 
 export interface ExamQueryParams {
   page?: number;
   pageSize?: number;
+  search?: string;
   organizationId?: string;
+  status?: string;
   examType?: string;
   gradeLevel?: string;
-  startDate?: string;
-  endDate?: string;
-  status?: string;
-  search?: string;
 }
 
 export interface QuestionQueryParams {
   page?: number;
   pageSize?: number;
-  examId?: string;
-  organizationId?: string;
-  subject?: string;
-  questionType?: string;
-  difficultyLevel?: string;
-  vocabularyLevel?: string;
   search?: string;
-  hasAudio?: boolean;
-  tags?: string[];
-  knowledgePoints?: string[];
+  organizationId?: string;
+  examId?: string;
+  subject?: string;
+  difficultyLevel?: string;
+  status?: string;
+  questionType?: string;
 }
