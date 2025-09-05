@@ -282,13 +282,13 @@ function QuestionDetailContent({ questionId }: { questionId: string }) {
             <label className="text-xs font-medium text-muted-foreground">分值</label>
             <p className="text-sm font-mono">{question.totalScore}</p>
           </div>
-          {question.correctRate !== undefined && (
+          {(question.correctRate !== undefined && question.correctRate !== null && typeof question.correctRate === 'number') && (
             <div>
               <label className="text-xs font-medium text-muted-foreground">正确率</label>
               <p className="text-sm font-mono">{(question.correctRate * 100).toFixed(1)}%</p>
             </div>
           )}
-          {question.averageScore !== undefined && (
+          {(question.averageScore !== undefined && question.averageScore !== null && typeof question.averageScore === 'number') && (
             <div>
               <label className="text-xs font-medium text-muted-foreground">平均得分</label>
               <p className="text-sm font-mono">{question.averageScore.toFixed(1)}</p>
