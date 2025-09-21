@@ -18,8 +18,8 @@ export async function onRequest(context) {
     const searchParams = url.searchParams;
 
     if (request.method === 'GET') {
-      // 解析分页参数
-      const { page, pageSize, offset } = parsePagination(searchParams);
+      // 解析分页参数（增强：即使无查询参数也有默认值）
+      const { page = 1, pageSize = 20, offset = 0 } = parsePagination(searchParams ?? new URLSearchParams());
       
       // --- 调试信息: 打印查询参数 ---
       const search = searchParams.get('search');

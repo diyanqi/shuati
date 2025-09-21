@@ -11,7 +11,7 @@ export async function onRequest({ request, env }) {
     const searchParams = url.searchParams;
 
     if (request.method === 'GET') {
-      const { page, pageSize, offset } = parsePagination(searchParams);
+      const { page = 1, pageSize = 20, offset = 0 } = parsePagination(searchParams ?? new URLSearchParams());
       
       let query = supabase
         .from('questions')
