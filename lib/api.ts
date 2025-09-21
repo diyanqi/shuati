@@ -13,11 +13,12 @@ import {
   QuestionQueryParams,
 } from '@/types/api';
 
-// API配置
+// API配置（按环境区分基址）
 const API_CONFIG = {
-  baseURL: process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:8088/api' 
-    : '/api',
+  baseURL:
+    process.env.NODE_ENV === 'development'
+      ? 'http://localhost:8088/api'
+      : 'https://inkcraft-ti-assets.amzcd.top/api',
   timeout: 30000,
 };
 
@@ -26,7 +27,10 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_CONFIG.baseURL}${endpoint}`;
+  // 规范化拼接，避免双斜杠或缺失斜杠
+  const base = API_CONFIG.baseURL.replace(/\/$/, '');
+  const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${base}${path}`;
   
   const config: RequestInit = {
     headers: {
