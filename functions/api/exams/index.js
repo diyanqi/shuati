@@ -58,6 +58,46 @@ export async function onRequest({ request, env }) {
         query = query.lte('end_date', endDate);
       }
 
+  // 追加一次独立 count 查询
+  let total = null;
+  try {
+    let countQuery = supabase
+      .from('exams')
+      .select('id', { head: true, count: 'exact' });
+
+    if (organizationId) {
+      countQuery = countQuery.eq('organization_id', organizationId);
+    }
+    if (examType) {
+      countQuery = countQuery.eq('exam_type', examType);
+    }
+    if (gradeLevel) {
+      countQuery = countQuery.eq('grade_level', gradeLevel);
+    }
+    if (status) {
+      countQuery = countQuery.eq('status', status);
+    }
+    if (search) {
+      countQuery = countQuery.or(`name.ilike.%${search}%,description.ilike.%${search}%,exam_code.ilike.%${search}%`);
+    }
+    if (startDate) {
+      countQuery = countQuery.gte('start_date', startDate);
+    }
+    if (endDate) {
+      countQuery = countQuery.lte('end_date', endDate);
+    }
+
+    const { count: totalCount, error: countError } = await countQuery;
+    if (!countError && typeof totalCount === 'number') {
+      total = totalCount;
+    } else if (countError) {
+      console.warn('[DEBUG] Count query error (exams):', JSON.stringify(countError, null, 2));
+    }
+  } catch (e) {
+    console.warn('[DEBUG] Count query exception (exams):', e?.message || e);
+  }
+
+  // 执行分页数据查询
   const { data, error } = await query.range(offset, offset + pageSize - 1);
 
       if (error) {
@@ -202,12 +242,12 @@ export async function onRequest({ request, env }) {
         };
       });
 
-      const hasNext = Array.isArray(data) && data.length === pageSize;
+      const hasNext = typeof total === 'number' ? (page * pageSize < total) : (Array.isArray(data) && data.length === pageSize);
       const pagination = {
         page,
         pageSize,
-        total: null,
-        totalPages: null,
+        total,
+        totalPages: typeof total === 'number' ? Math.ceil(total / pageSize) : null,
         hasNext,
         hasPrev: page > 1
       };

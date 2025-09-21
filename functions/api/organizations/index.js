@@ -48,11 +48,38 @@ export async function onRequest(context) {
         query = query.eq('status', status);
       }
 
-      // 执行查询
-  const { data, error } = await query.range(offset, offset + pageSize - 1);
+      // 追加一次独立 count 查询（避免联表/分页，仅复用相同过滤条件）
+      let total = null;
+      try {
+        let countQuery = supabase
+          .from('organizations')
+          .select('id', { head: true, count: 'exact' });
+
+        if (search) {
+          countQuery = countQuery.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+        }
+        if (region) {
+          countQuery = countQuery.eq('region', region);
+        }
+        if (status) {
+          countQuery = countQuery.eq('status', status);
+        }
+
+        const { count: totalCount, error: countError } = await countQuery;
+        if (!countError && typeof totalCount === 'number') {
+          total = totalCount;
+        } else if (countError) {
+          console.warn('[DEBUG] Count query error (organizations):', JSON.stringify(countError, null, 2));
+        }
+      } catch (e) {
+        console.warn('[DEBUG] Count query exception (organizations):', e?.message || e);
+      }
+
+      // 执行分页数据查询
+      const { data, error } = await query.range(offset, offset + pageSize - 1);
 
       // --- 调试信息: 打印查询结果 ---
-  console.log(`[DEBUG] Supabase query returned rows: ${Array.isArray(data) ? data.length : 'N/A'}`);
+  console.log(`[DEBUG] Supabase query returned rows: ${Array.isArray(data) ? data.length : 'N/A'}, total: ${total ?? 'N/A'}`);
       if (error) {
         console.error('[DEBUG] Supabase query error:', JSON.stringify(error, null, 2));
       }
@@ -85,12 +112,12 @@ export async function onRequest(context) {
       }));
 
       // 构建分页信息
-      const hasNext = Array.isArray(data) && data.length === pageSize;
+      const hasNext = typeof total === 'number' ? (page * pageSize < total) : (Array.isArray(data) && data.length === pageSize);
       const pagination = {
         page,
         pageSize,
-        total: null,
-        totalPages: null,
+        total,
+        totalPages: typeof total === 'number' ? Math.ceil(total / pageSize) : null,
         hasNext,
         hasPrev: page > 1
       };

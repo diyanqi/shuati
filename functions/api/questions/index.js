@@ -83,6 +83,63 @@ export async function onRequest({ request, env }) {
         });
       }
 
+  // 追加一次独立 count 查询
+  let total = null;
+  try {
+    let countQuery = supabase
+      .from('questions')
+      .select('id', { head: true, count: 'exact' });
+
+    if (examId) {
+      countQuery = countQuery.eq('exam_id', examId);
+    }
+    if (organizationId) {
+      countQuery = countQuery.eq('organization_id', organizationId);
+    }
+    if (subject) {
+      countQuery = countQuery.eq('subject', subject);
+    }
+    if (questionType) {
+      countQuery = countQuery.eq('question_type', questionType);
+    }
+    if (difficultyLevel) {
+      countQuery = countQuery.eq('difficulty_level', difficultyLevel);
+    }
+    if (vocabularyLevel) {
+      countQuery = countQuery.eq('vocabulary_level', vocabularyLevel);
+    }
+    if (hasAudio === 'true') {
+      countQuery = countQuery.not('audio_url', 'is', null);
+    } else if (hasAudio === 'false') {
+      countQuery = countQuery.is('audio_url', null);
+    }
+    if (search) {
+      countQuery = countQuery.or(`question_text.ilike.%${search}%,japanese_text.ilike.%${search}%,reference_answer.ilike.%${search}%`);
+    }
+    if (knowledgePoints) {
+      const points = knowledgePoints.split(',');
+      points.forEach(point => {
+        countQuery = countQuery.contains('knowledge_points', [point.trim()]);
+      });
+    }
+    if (tags) {
+      const tagList = tags.split(',');
+      tagList.forEach(tag => {
+        countQuery = countQuery.contains('tags', [tag.trim()]);
+      });
+    }
+
+    const { count: totalCount, error: countError } = await countQuery;
+    if (!countError && typeof totalCount === 'number') {
+      total = totalCount;
+    } else if (countError) {
+      console.warn('[DEBUG] Count query error (questions):', JSON.stringify(countError, null, 2));
+    }
+  } catch (e) {
+    console.warn('[DEBUG] Count query exception (questions):', e?.message || e);
+  }
+
+  // 执行分页数据查询
   const { data, error } = await query.range(offset, offset + pageSize - 1);
 
       if (error) {
@@ -138,12 +195,12 @@ export async function onRequest({ request, env }) {
         examCode: question.exams?.exam_code
       }));
 
-      const hasNext = Array.isArray(data) && data.length === pageSize;
+      const hasNext = typeof total === 'number' ? (page * pageSize < total) : (Array.isArray(data) && data.length === pageSize);
       const pagination = {
         page,
         pageSize,
-        total: null,
-        totalPages: null,
+        total,
+        totalPages: typeof total === 'number' ? Math.ceil(total / pageSize) : null,
         hasNext,
         hasPrev: page > 1
       };
