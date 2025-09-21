@@ -30,7 +30,7 @@ export async function onRequest(context) {
       // 构建查询
       let query = supabase
         .from('organizations')
-        .select('*', { count: 'exact' })
+        .select('*')
         .order('created_at', { ascending: false });
 
       // 搜索过滤
@@ -49,10 +49,10 @@ export async function onRequest(context) {
       }
 
       // 执行查询
-      const { data, error, count } = await query.range(offset, offset + pageSize - 1);
+  const { data, error } = await query.range(offset, offset + pageSize - 1);
 
       // --- 调试信息: 打印查询结果 ---
-      console.log(`[DEBUG] Supabase query returned count: ${count}`);
+  console.log(`[DEBUG] Supabase query returned rows: ${Array.isArray(data) ? data.length : 'N/A'}`);
       if (error) {
         console.error('[DEBUG] Supabase query error:', JSON.stringify(error, null, 2));
       }
@@ -85,13 +85,13 @@ export async function onRequest(context) {
       }));
 
       // 构建分页信息
-      const totalPages = Math.ceil(count / pageSize);
+      const hasNext = Array.isArray(data) && data.length === pageSize;
       const pagination = {
         page,
         pageSize,
-        total: count,
-        totalPages,
-        hasNext: page < totalPages,
+        total: null,
+        totalPages: null,
+        hasNext,
         hasPrev: page > 1
       };
 

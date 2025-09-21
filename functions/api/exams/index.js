@@ -20,7 +20,7 @@ export async function onRequest({ request, env }) {
           *,
           organizations!inner(name),
           questions(id, subject)
-        `, { count: 'exact' })
+        `)
         .order('created_at', { ascending: false });
 
       // 各种过滤条件
@@ -58,7 +58,7 @@ export async function onRequest({ request, env }) {
         query = query.lte('end_date', endDate);
       }
 
-      const { data, error, count } = await query.range(offset, offset + pageSize - 1);
+  const { data, error } = await query.range(offset, offset + pageSize - 1);
 
       if (error) {
         throw {
@@ -202,13 +202,13 @@ export async function onRequest({ request, env }) {
         };
       });
 
-      const totalPages = Math.ceil(count / pageSize);
+      const hasNext = Array.isArray(data) && data.length === pageSize;
       const pagination = {
         page,
         pageSize,
-        total: count,
-        totalPages,
-        hasNext: page < totalPages,
+        total: null,
+        totalPages: null,
+        hasNext,
         hasPrev: page > 1
       };
 

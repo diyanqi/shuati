@@ -19,7 +19,7 @@ export async function onRequest({ request, env }) {
           *,
           organizations(name),
           exams(name, exam_code)
-        `, { count: 'exact' })
+        `)
         .order('created_at', { ascending: false });
 
       // 各种筛选条件
@@ -83,7 +83,7 @@ export async function onRequest({ request, env }) {
         });
       }
 
-      const { data, error, count } = await query.range(offset, offset + pageSize - 1);
+  const { data, error } = await query.range(offset, offset + pageSize - 1);
 
       if (error) {
         throw {
@@ -138,13 +138,13 @@ export async function onRequest({ request, env }) {
         examCode: question.exams?.exam_code
       }));
 
-      const totalPages = Math.ceil(count / pageSize);
+      const hasNext = Array.isArray(data) && data.length === pageSize;
       const pagination = {
         page,
         pageSize,
-        total: count,
-        totalPages,
-        hasNext: page < totalPages,
+        total: null,
+        totalPages: null,
+        hasNext,
         hasPrev: page > 1
       };
 
