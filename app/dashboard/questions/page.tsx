@@ -36,14 +36,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Question } from "@/types/api";
+import { Question, PaginationInfo } from "@/types/api";
 import { QuestionDetailDialog } from "@/components/question-detail-dialog";
 
 import { useMediaQuery } from "@/hooks/use-media-query";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // Loading skeleton component
 const TableSkeleton = () => (
@@ -52,25 +62,23 @@ const TableSkeleton = () => (
       <Skeleton className="h-10 w-1/3" />
       <Skeleton className="ml-auto h-10 w-24" />
     </div>
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {[...Array(8)].map((_, i) => (
-              <TableHead key={i}><Skeleton className="h-6 w-full" /></TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {[...Array(10)].map((_, i) => (
-            <TableRow key={i}>
-              {[...Array(8)].map((_, j) => (
-                <TableCell key={j}><Skeleton className="h-6 w-full" /></TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+      {[...Array(8)].map((_, i) => (
+        <Card key={i} className="border">
+          <CardHeader className="space-y-1">
+            <Skeleton className="h-5 w-2/3" />
+            <Skeleton className="h-4 w-1/3" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-4 w-2/5" />
+          </CardContent>
+          <CardFooter>
+            <Skeleton className="h-8 w-24" />
+          </CardFooter>
+        </Card>
+      ))}
     </div>
   </div>
 );
@@ -84,6 +92,9 @@ export default function QuestionsPage() {
   const [data, setData] = React.useState<Question[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [page, setPage] = React.useState(1);
+  const [pageSize] = React.useState(12);
+  const [pagination, setPagination] = React.useState<PaginationInfo | null>(null);
 
   // Dialog state
   const [selectedQuestionId, setSelectedQuestionId] = React.useState<string | null>(null);
@@ -121,15 +132,16 @@ export default function QuestionsPage() {
   const fetchQuestions = React.useCallback(async () => {
     try {
       setIsLoading(true);
-      const result = await api.question.getList();
+      const result = await api.question.getList({ page, pageSize });
       setData(result.items);
+      setPagination(result.pagination);
     } catch (e: any) {
       setError(e.message);
       toast.error("获取题目列表失败", { description: e.message });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page, pageSize]);
 
   React.useEffect(() => {
     fetchQuestions();
@@ -360,78 +372,126 @@ export default function QuestionsPage() {
             className="max-w-sm"
           />
         </div>
-        <div className="rounded-md border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    暂无数据
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+        <div>
+          {table.getRowModel().rows?.length ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+              {table.getRowModel().rows.map((row) => {
+                const q = row.original as Question;
+                return (
+                  <Card key={q.id} className="hover:shadow-sm transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <CardTitle className="text-base font-semibold leading-tight line-clamp-2 break-anywhere" title={q.questionText}>
+                            {q.questionText}
+                          </CardTitle>
+                          <p className="text-xs text-muted-foreground mt-1">{q.questionCode}</p>
+                        </div>
+                        {getStatusBadge(q.status)}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">学科</span>
+                        <span>{getSubjectBadge(q.subject)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">难度</span>
+                        <span>{getDifficultyBadge(q.difficultyLevel)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">分值</span>
+                        <span className="font-mono">{q.totalScore}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">正确率</span>
+                        <span className="font-mono">{q.correctRate !== undefined ? `${(q.correctRate * 100).toFixed(1)}%` : '-'}</span>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="flex items-center justify-between">
+                      <Button variant="outline" size="sm" className="h-8" onClick={() => openQuestionDialog(q.id)}>
+                        显示详情
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <DotsHorizontalIcon className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>操作</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => navigator.clipboard.writeText(q.id)}>
+                            复制题目 ID
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-24 flex items-center justify-center text-muted-foreground">暂无数据</div>
+          )}
         </div>
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
-            已选择 {table.getFilteredSelectedRowModel().rows.length} 行，共 {table.getFilteredRowModel().rows.length} 行
-          </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              上一页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              下一页
-            </Button>
-          </div>
+        <div className="py-4">
+          {pagination && pagination.totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    className={!pagination.hasPrev ? "pointer-events-none opacity-50" : undefined}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination.hasPrev) setPage((p) => Math.max(1, p - 1));
+                    }}
+                  />
+                </PaginationItem>
+                {(() => {
+                  const total = pagination.totalPages;
+                  const current = pagination.page;
+                  const pages: (number | "ellipsis")[] = [];
+                  const push = (v: number | "ellipsis") => pages.push(v);
+                  const addRange = (s: number, e: number) => { for (let i = s; i <= e; i++) push(i); };
+                  const showLeft = Math.max(2, current - 1);
+                  const showRight = Math.min(total - 1, current + 1);
+                  push(1);
+                  if (showLeft > 2) push("ellipsis");
+                  addRange(showLeft, showRight);
+                  if (showRight < total - 1) push("ellipsis");
+                  if (total > 1) push(total);
+                  return pages.map((p, idx) => (
+                    <PaginationItem key={idx}>
+                      {p === "ellipsis" ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          isActive={p === current}
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setPage(p);
+                          }}
+                        >
+                          {p}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ));
+                })()}
+                <PaginationItem>
+                  <PaginationNext
+                    className={!pagination.hasNext ? "pointer-events-none opacity-50" : undefined}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination.hasNext) setPage((p) => Math.min(pagination.totalPages, p + 1));
+                    }}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       </div>
 
